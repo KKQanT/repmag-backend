@@ -21,8 +21,8 @@ export function authorizeUser(req: any, res: any, next: any) {
         const decodedUser = jwt.verify(token, JWT_SECRET);
         req.user = decodedUser
         next()
-    } catch (err) {
-        res.status(400).send("Invalid token")
+    } catch (err: any) {
+        res.status(400).send({message: err.message})
     }
 
 }
