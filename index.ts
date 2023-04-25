@@ -4,6 +4,7 @@ import bodyParser from "body-parser";
 import authRouter from "./router/authRouter";
 import dotenv from "dotenv";
 import mongoose, { ConnectOptions } from "mongoose";
+import cors from "cors";
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ mongoose.connection.on('connected', () => {
     console.log('Connected to MongoDB');
 });
 
+app.use(cors())
 app.use(express.json())
 app.use("/auth", authRouter)
 
