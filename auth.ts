@@ -22,7 +22,7 @@ export function authorizeUser(req: any, res: any, next: any) {
         req.user = decodedUser
         next()
     } catch (err: any) {
-        res.status(400).send({message: err.message})
+        res.status(400).send({ message: err.message })
     }
 
 }
@@ -54,3 +54,28 @@ export const validatePassword = function (
     ).toString('hex');
     return hash === hashedPassword
 };
+
+export const verifyAndDecodedJWT = (
+    req: any, res: any, next: any
+) => {
+    if (req.email) {
+        res.status(400).send("Invalid token.")
+    } else if (!req.bearerToken) {
+        res.status(401).send("Invalid token.")
+    } else {
+        try {
+            const decoded = jwt.verify(req.bearerToken, JWT_SECRET);
+            const email: string = (decoded as any).email;
+            if (email) {
+                req.email = email;
+                next();
+            } else {
+                res.status(402).send('Invalid token.')
+            }
+
+        } catch (err) {
+            res.status(500).send("verification error")
+        }
+    }
+
+}

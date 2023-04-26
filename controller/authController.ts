@@ -43,7 +43,7 @@ export async function loginUser(req: any, res: any) {
             const hashedPassword = userRecord.hashedPassword;
             const validPassword = validatePassword(password, salt, hashedPassword);
             if (validPassword) {
-                const token = jwt.sign({ email: email }, JWT_SECRET);
+                const token = jwt.sign({ email: email, }, JWT_SECRET);
                 res.status(200).send({ bearerToken: token });
             } else {
                 res.status(203).send({message: "invalid password"})
