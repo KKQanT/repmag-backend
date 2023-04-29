@@ -58,7 +58,6 @@ export const validatePassword = function (
 export const verifyAndDecodedJWT = (
     req: any, res: any, next: any
 ) => {
-    console.log("Auth: ", req.headers.authorization)
     const bearerToken = req.headers.authorization;
     if (req.email) {
         res.status(400).send("Invalid token.")
@@ -67,7 +66,6 @@ export const verifyAndDecodedJWT = (
     } else {
         try {
             const decoded = jwt.verify(bearerToken, JWT_SECRET);
-            console.log("decoded", decoded)
             const email: string = (decoded as any).email;
             if (email) {
                 req.email = email;
