@@ -17,11 +17,11 @@ interface updateUserData {
 }
 
 export async function updateUserData(
-    res: any, req: any
+    req: any, res: any
 ) {
     try {
         const body: updateUserData = req.body;
-        const filter = { email: req.email }
+        const filter = { email: req.email };
         const record = await User.findOneAndUpdate(filter, body);
         res.status(200).send({
             name: record?.name,
@@ -33,4 +33,18 @@ export async function updateUserData(
         res.status(500).send({message: (err as any).message})
     }
     
+}
+
+export async function getSelfProfile(req: any, res:any) {
+    try {
+        const filter = {email: req.email};
+        const record = await User.findOne(filter);
+        res.status(200).send({
+            name: record?.name,
+            gender: record?.gender,
+            interestedIn: record?.interestedIn
+        })
+    } catch (err) {
+        res.status(500).send({message: (err as any).message})
+    }
 }
