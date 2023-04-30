@@ -1,4 +1,5 @@
 import { User } from "../model/userModel";
+import { Request, Response } from "express";
 
 enum Gender {
     Man = "man",
@@ -13,10 +14,11 @@ interface updateUserData {
 }
 
 export async function updateUserData(
-    req: any, res: any
+    req: Request, res: Response
 ) {
     try {
         const body: updateUserData = req.body;
+        //@ts-ignore
         const filter = { email: req.email };
         const record = await User.findOneAndUpdate(filter, body);
         res.status(200).send({
@@ -34,8 +36,9 @@ export async function updateUserData(
     
 }
 
-export async function getSelfProfile(req: any, res:any) {
+export async function getSelfProfile(req: Request, res: Response) {
     try {
+        //@ts-ignore
         const filter = {email: req.email};
         const record = await User.findOne(filter);
         res.status(200).send({

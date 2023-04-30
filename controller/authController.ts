@@ -3,12 +3,13 @@ import { User } from "../model/userModel";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import {v4 as uuidv4} from "uuid";
+import { Request, Response } from "express";
 
 dotenv.config()
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 
-export async function registerUser(req: any, res: any) {
+export async function registerUser(req: Request, res: Response) {
     try {
         const email = req.body.email;
         const password = req.body.password;
@@ -34,7 +35,7 @@ export async function registerUser(req: any, res: any) {
 
 }
 
-export async function loginUser(req: any, res: any) {
+export async function loginUser(req: Request, res: Response) {
     try {
         const email = req.body.email;
         const password = req.body.password;

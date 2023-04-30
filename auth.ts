@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import crypto from "crypto";
+import { Request, Response, NextFunction } from "express";
 
 dotenv.config()
 
@@ -10,7 +11,9 @@ export function generateAccessToken(username: string) {
     return jwt.sign(username, JWT_SECRET, { expiresIn: "1800s" })
 }
 
-export function authorizeUser(req: any, res: any, next: any) {
+export function authorizeUser(
+    req: Request, res: Response, next: NextFunction
+) {
     const token = req.headers['authorization'];
 
     if (!token) {
@@ -19,6 +22,7 @@ export function authorizeUser(req: any, res: any, next: any) {
 
     try {
         const decodedUser = jwt.verify(token, JWT_SECRET);
+        //@ts-ignore
         req.user = decodedUser
         next()
     } catch (err: any) {
@@ -56,9 +60,10 @@ export const validatePassword = function (
 };
 
 export const verifyAndDecodedJWT = (
-    req: any, res: any, next: any
+    req: Request, res: Response, next: NextFunction
 ) => {
     const bearerToken = req.headers.authorization;
+    //@ts-ignore
     if (req.email) {
         res.status(400).send("Invalid token.")
     } else if (!bearerToken) {
@@ -68,6 +73,7 @@ export const verifyAndDecodedJWT = (
             const decoded = jwt.verify(bearerToken, JWT_SECRET);
             const email: string = (decoded as any).email;
             if (email) {
+                //@ts-ignore
                 req.email = email;
                 next();
             } else {
