@@ -33,9 +33,9 @@ app.use("/user", userRouter);
 app.get('/', async (req, res) => {
     res.send('<h1>Express backend</h1>');
 
-    //const record = await User.findOneAndDelete({email: "user1@gmail.com"}) console.log(record);
+    //const record = await User.findOneAndDelete({email: "admin"}); console.log(record);
 
-    //const records = await User.find(); console.log(records);
+    const records = await User.find(); console.log(records);
 });
 
 const server = http.createServer(app);

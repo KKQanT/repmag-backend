@@ -2,6 +2,7 @@ import { generateAccessToken, hashPassword, validatePassword } from "../auth";
 import { User } from "../model/userModel";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import {v4 as uuidv4} from "uuid";
 
 dotenv.config()
 
@@ -14,6 +15,8 @@ export async function registerUser(req: any, res: any) {
         const userRecord = await User.findOne({ email: email });
         if (userRecord === null) {
             let newUser = new User();
+            const userID = uuidv4();
+            newUser.userID = userID;
             newUser.email = email;
             const [salt, hashedPassword] = hashPassword(password);
             newUser.salt = salt;

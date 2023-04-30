@@ -1,12 +1,8 @@
 import { User } from "../model/userModel";
-import { verifyAndDecodedJWT } from "../auth";
 
 enum Gender {
-    Man = "Man",
-    Woman = "Woman",
-    Transgender = "Transgender",
-    NonBinary = "Non-Binary",
-    Null = ""
+    Man = "man",
+    Woman = "woman",
 }
 
 interface updateUserData {
@@ -26,7 +22,10 @@ export async function updateUserData(
         res.status(200).send({
             name: record?.name,
             gender: record?.gender,
-            interestedIn: record?.interestedIn
+            university: record?.university,
+            age: record?.age,
+            occupation: record?.occupation,
+            preferences: record?.preferences,
         });
         
     } catch (err) {
@@ -42,7 +41,10 @@ export async function getSelfProfile(req: any, res:any) {
         res.status(200).send({
             name: record?.name,
             gender: record?.gender,
-            interestedIn: record?.interestedIn
+            university: record?.university,
+            age: record?.age,
+            occupation: record?.occupation,
+            preferences: record?.preferences,
         })
     } catch (err) {
         res.status(500).send({message: (err as any).message})
