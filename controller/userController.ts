@@ -29,17 +29,17 @@ export async function updateUserData(
             occupation: record?.occupation,
             preferences: record?.preferences,
         });
-        
+
     } catch (err) {
-        res.status(500).send({message: (err as any).message})
+        res.status(500).send({ message: (err as any).message })
     }
-    
+
 }
 
 export async function getSelfProfile(req: Request, res: Response) {
     try {
         //@ts-ignore
-        const filter = {email: req.email};
+        const filter = { email: req.email };
         const record = await User.findOne(filter);
         res.status(200).send({
             name: record?.name,
@@ -50,6 +50,29 @@ export async function getSelfProfile(req: Request, res: Response) {
             preferences: record?.preferences,
         })
     } catch (err) {
-        res.status(500).send({message: (err as any).message})
+        res.status(500).send({ message: (err as any).message });
+    }
+}
+
+export async function getRecommendedUsers(req: Request, res: Response) {
+    try {
+        const records = await User.aggregate([
+            { $sample: { size: 100 } },
+            { $sort: { createdAt: -1 } },
+            { $limit: 25 },
+            { $project: {
+                age: 1, 
+                gender: 1,
+                name: 1,
+                occupation: 1,
+                university: 1,
+                userID: 1
+            }}
+        ]); //to do filter those who A has already liked first 
+        //@ts-ignore       
+        const filteredRecords = records.filter((item) => item.userID !== req.userID)
+        res.status(200).send(filteredRecords);
+    } catch (err) {
+        res.status(500).send({ message: (err as any).message });
     }
 }

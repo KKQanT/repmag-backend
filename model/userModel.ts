@@ -1,6 +1,4 @@
 import mongoose from "mongoose";
-import jwt from "jsonwebtoken";
-import crypto from "crypto";
 
 interface UserProfile {
     userID: string;
@@ -17,14 +15,14 @@ interface UserProfile {
         ageRange : {min: number, max: number} | null;
         universities: string[] | null;
         occupations: string[] | null
-    }
+    },
 
 }
 
 const UserSchema = new mongoose.Schema<UserProfile>(
     {
         userID: {type: String, required: true},
-        email: { type: String, required: true },
+        email: { type: String, required: true, unique:true},
         salt: { type: String, required: true },
         hashedPassword: {type: String, required: true},
         name: {type: String, default: null},
@@ -44,7 +42,7 @@ const UserSchema = new mongoose.Schema<UserProfile>(
             },
             universities: [{type: String}],
             occupations: [{type: String}]
-        }
+        },
 
     },
     { timestamps: true }

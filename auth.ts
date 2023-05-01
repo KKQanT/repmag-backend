@@ -59,7 +59,7 @@ export const validatePassword = function (
     return hash === hashedPassword
 };
 
-export const verifyAndDecodedJWT = (
+export const verifyAndDecodedJWTInReq = (
     req: Request, res: Response, next: NextFunction
 ) => {
     const bearerToken = req.headers.authorization;
@@ -72,9 +72,12 @@ export const verifyAndDecodedJWT = (
         try {
             const decoded = jwt.verify(bearerToken, JWT_SECRET);
             const email: string = (decoded as any).email;
+            const userID: string = (decoded as any).userID;
             if (email) {
                 //@ts-ignore
                 req.email = email;
+                //@ts-ignore
+                req.userID = userID
                 next();
             } else {
                 res.status(402).send('Invalid token.')
@@ -86,3 +89,13 @@ export const verifyAndDecodedJWT = (
     }
 
 }
+
+export const verifyAndDecodedJWT = (bearerToken: string) => {
+    try {
+        const decoded = jwt.verify(bearerToken, JWT_SECRET);
+        const userID: string = (decoded as any).userID;
+        return userID
+    } catch (err) {
+        return null
+    }
+};
