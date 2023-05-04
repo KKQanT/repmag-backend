@@ -14,6 +14,7 @@ import { PrivateMessageArgs } from "./types";
 import { ChatHistory } from "./model/chatHistoryModel";
 import { MatchingState } from "./model/MatchingModel";
 import matchRouter from "./router/matchingRouter";
+import { broadcaseEventToUserID } from "./utils";
 
 declare module "socket.io" {
     interface Socket {
@@ -50,8 +51,8 @@ app.get('/', async (req: Request, res: Response) => {
     //const record = await User.findOneAndDelete({email: "admin"}); console.log(record);
 
     //const records = await User.find(); console.log(records);
-    //await OnlineUser.deleteMany();
-    const records = await OnlineUser.find(); console.log(records);
+    await MatchingState.deleteMany();
+    const records = await MatchingState.find(); console.log(records);
 });
 
 const server = http.createServer(app);
@@ -81,9 +82,9 @@ io.use((socket: Socket, next: any) => {
 })
 
 io.on('connection', (socket: Socket) => {
-    
+
     console.log("A user connected: ", socket.id);
-    
+
     const userID = socket.userID;
     const onlineUser = new OnlineUser({ socketID: socket.id, userID: userID });
     onlineUser.save();
@@ -125,22 +126,46 @@ io.on('connection', (socket: Socket) => {
 
             chatHistoryToSave.save();
 
-            const queryResult = await OnlineUser.find({ userID: args.toUserID });
-            if (queryResult.length > 0) {
-                // send offline message
-                const toSocketIDs = queryResult.map((item) => { return item.socketID });
-                toSocketIDs.forEach((toSocketID) => {
-                    const toSocket = io.sockets.sockets.get(toSocketID);
-                    if (toSocket) {
-                        toSocket.emit("private message", args)
-                    }
-                });
-
-            }
+            await broadcaseEventToUserID(io, userID, "private message", args);
         } catch (err) {
             console.error("private message err: " + err)
         }
     });
+
+    socket.on("match notify", async (
+        { targetUserID }: { targetUserID: string }
+    ) => {
+        try {
+            const queryUserResult = await User.findOne({ userID: socket.userID });
+            if (queryUserResult) {
+                await broadcaseEventToUserID(
+                    io, targetUserID, "match notify", {name: queryUserResult.name});
+            } else {
+                console.log('match notify error : no user found')
+            }
+        }
+        catch (err) {
+            console.log('match notify error :' + (err as any).message)
+        }
+    })
+
+    socket.on("liked notify", async (
+        { targetUserID }: { targetUserID: string }
+    ) => {
+        try {
+            console.log('liked notify invoked')
+            const queryUserResult = await User.findOne({userID: socket.userID});
+            if (queryUserResult) {
+                console.log('liked notify invoked 2')
+                await broadcaseEventToUserID(
+                    io, targetUserID, "liked notify", {name: queryUserResult.name}
+                )
+            } else {
+                console.log('liked notify error : no user found')
+            }
+         } 
+        catch (err) {}
+    })
 
 
 })

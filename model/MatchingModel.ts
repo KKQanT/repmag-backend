@@ -4,7 +4,7 @@ interface MatchingType {
     userA: string;
     userB: string;
     isLiked: boolean;
-    isMatched: boolean;
+    status: string;
 }
 
 const MatchingSchema = new mongoose.Schema<MatchingType>(
@@ -12,7 +12,12 @@ const MatchingSchema = new mongoose.Schema<MatchingType>(
         userA: {type: String, required: true},
         userB: {type: String, required: true},
         isLiked: { type: Boolean, required: true },
-        isMatched: { type: Boolean, default: false, required: true },
+        status: { 
+            type: String,
+            enum: ["await", "matched", "pass", "unmatched"], 
+            default: "await", 
+            required: true 
+        },
     },
     {
         timestamps: true
