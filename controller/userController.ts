@@ -42,6 +42,7 @@ export async function getSelfProfile(req: Request, res: Response) {
         const filter = { email: req.email };
         const record = await User.findOne(filter);
         res.status(200).send({
+            userID: record?.userID,
             name: record?.name,
             gender: record?.gender,
             university: record?.university,

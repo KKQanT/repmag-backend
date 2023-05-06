@@ -14,7 +14,8 @@ import { PrivateMessageArgs } from "./types";
 import { ChatHistory } from "./model/chatHistoryModel";
 import { MatchingState } from "./model/MatchingModel";
 import matchRouter from "./router/matchingRouter";
-import { broadcaseEventToUserID } from "./utils";
+import { broadcaseEventToOtherTab, broadcaseEventToUserID } from "./utils";
+import chatHistoryRouter from "./router/chatRouter";
 
 declare module "socket.io" {
     interface Socket {
@@ -44,6 +45,7 @@ app.use(express.json());
 app.use("/auth", authRouter);
 app.use("/user", userRouter);
 app.use('/match', matchRouter)
+app.use('/chat/', chatHistoryRouter)
 
 app.get('/', async (req: Request, res: Response) => {
     res.send('<h1>Express backend</h1>');
@@ -51,8 +53,10 @@ app.get('/', async (req: Request, res: Response) => {
     //const record = await User.findOneAndDelete({email: "admin"}); console.log(record);
 
     //const records = await User.find(); console.log(records);
-    await MatchingState.deleteMany();
-    const records = await MatchingState.find(); console.log(records);
+    //await MatchingState.deleteMany();
+    //const records = await MatchingState.find(); console.log(records);
+    //await OnlineUser.deleteMany()
+    //console.log(await OnlineUser.find())
 });
 
 const server = http.createServer(app);
@@ -116,17 +120,21 @@ io.on('connection', (socket: Socket) => {
             const fromUserID = socket.userID;
 
             console.log("message from: ", fromUserID);
+            console.log("message: ", args.message);
 
             //store message in DB
             const chatHistoryToSave = new ChatHistory({
                 fromUserID: fromUserID,
                 toUserID: args.toUserID,
-                message: args.message
+                message: args.message,
             });
 
             chatHistoryToSave.save();
 
-            await broadcaseEventToUserID(io, userID, "private message", args);
+            args.fromUserID = fromUserID;
+
+            await broadcaseEventToUserID(io, args.toUserID, "private message", args);
+            await broadcaseEventToOtherTab(io, socket.id, userID, "self private message", args);
         } catch (err) {
             console.error("private message err: " + err)
         }

@@ -1,7 +1,6 @@
-import mongoose from "mongoose";
 import { User } from "../model/userModel";
 import { MatchingState } from "../model/MatchingModel";
-import e, { Request, Response } from "express";
+import  { Request, Response } from "express";
 
 export async function getMatched(req: Request, res: Response) {
     try {
@@ -26,6 +25,8 @@ export async function getMatched(req: Request, res: Response) {
 
         const matchedUsers = await User.find({
             userID: { $in: uniqueMatchList }
+        }).select({
+            age: 1,  gender: 1, name: 1, occupation: 1, university: 1, userID: 1, _id: 0
         });
 
         res.status(200).send(matchedUsers)
