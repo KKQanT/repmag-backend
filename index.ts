@@ -55,10 +55,8 @@ app.get('/', async (req: Request, res: Response) => {
     //const records = await User.find(); console.log(records);
     //await MatchingState.deleteMany();
     //const records = await MatchingState.find(); console.log(records);
-    //await OnlineUser.deleteMany()
-    //console.log(await OnlineUser.find())
-});
-
+    //await OnlineUser.deleteMany({});
+})
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
@@ -173,6 +171,30 @@ io.on('connection', (socket: Socket) => {
             }
          } 
         catch (err) {}
+    })
+
+    socket.on("receiver instant read message", async (data: PrivateMessageArgs) => {
+        ChatHistory.updateMany({
+            fromUserID: data.fromUserID, 
+            toUserID: data.toUserID,
+            createdAt: {$lte: new Date()},
+            isRead: false
+        }, {isRead: true});
+        let newData: any = data;
+        newData.recentReadTime = new Date();
+        broadcaseEventToUserID(io, data.fromUserID, "receiver instant read message", newData);
+    })
+
+    socket.on("receiver has read all messages", async (data: PrivateMessageArgs) => {
+        console.log("receiver has read all messages")
+        console.log(data.fromUserID)
+        console.log(data.toUserID)
+        ChatHistory.updateMany({
+            fromUserID: data.fromUserID, 
+            toUserID: data.toUserID,
+            isRead: false
+        }, {isRead: true});
+        broadcaseEventToUserID(io, data.fromUserID, "receiver has read all messages", data)
     })
 
 
