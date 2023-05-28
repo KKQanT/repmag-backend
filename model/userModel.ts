@@ -8,8 +8,9 @@ interface UserProfile {
     name: string | null;
     gender: "man" | "woman" | null;
     university: string | null;
-    age: number | null;
+    birthdate: Date | null;
     occupation: string | null;
+    company: string | null,
     userImages: string[],
     bio: string|null;
     interestedIn: string[],
@@ -34,8 +35,9 @@ const UserSchema = new mongoose.Schema<UserProfile>(
         name: { type: String, default: null },
         gender: { type: String, enum: ["man", "woman", null], default: null },
         university: { type: String, default: null },
-        age: { type: Number, default: null },
+        birthdate: { type: Date, default: null },
         occupation: { type: String, default: null },
+        company: {type: String, default: null},
         userImages: [{ type: String }],
         bio: { type: String, default: null },
         location: {

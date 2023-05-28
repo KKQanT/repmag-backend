@@ -50,7 +50,10 @@ app.use('/chat/', chatHistoryRouter)
 app.get('/', async (req: Request, res: Response) => {
     res.send('<h1>Express backend</h1>');
     //await OnlineUser.deleteMany({});
-   console.log( await User.find({name:"user1"}))
+    //await User.deleteMany();
+    //await ChatHistory.deleteMany();
+    //await MatchingState.deleteMany();
+
 })
 const server = http.createServer(app);
 const io = new Server(server, {
