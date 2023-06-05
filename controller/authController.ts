@@ -26,7 +26,7 @@ export async function registerUser(req: Request, res: Response) {
             res.status(200).send({ message: "user registered" })
 
         } else {
-            res.status(202).send({ message: "username exist" })
+            res.status(500).send({ message: "username exist" })
         }
 
     } catch (err: any) {

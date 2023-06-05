@@ -17,7 +17,7 @@ export async function updateUserData(
     req: Request, res: Response
 ) {
     try {
-        const body: updateUserData = req.body;
+        const body = req.body;
         //@ts-ignore
         const filter = { email: req.email };
         const record = await User.findOneAndUpdate(filter, body);

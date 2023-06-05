@@ -1,5 +1,5 @@
 import { User } from "../model/userModel";
-import { MatchingState } from "../model/MatchingModel";
+import { MatchingState } from "../model/matchingModel";
 import  { Request, Response } from "express";
 
 export async function getMatched(req: Request, res: Response) {

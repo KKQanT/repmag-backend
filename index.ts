@@ -1,9 +1,8 @@
-import express, { Application, NextFunction, Request, Response } from "express";
+import express, { Application, Request, Response } from "express";
 import http from "http";
-import bodyParser from "body-parser";
 import authRouter from "./router/authRouter";
 import dotenv from "dotenv";
-import mongoose, { ConnectOptions } from "mongoose";
+import mongoose, { ConnectOptions, Connection } from "mongoose";
 import cors from "cors";
 import { User } from "./model/userModel";
 import userRouter from "./router/userRouter";
@@ -12,15 +11,19 @@ import { verifyAndDecodedJWT } from "./auth";
 import { OnlineUser } from "./model/userStatusModel";
 import { PrivateMessageArgs } from "./types";
 import { ChatHistory } from "./model/chatHistoryModel";
-import { MatchingState } from "./model/MatchingModel";
+import { MatchingState } from "./model/matchingModel";
 import matchRouter from "./router/matchingRouter";
 import { broadcaseEventToOtherTab, broadcaseEventToUserID } from "./utils";
 import chatHistoryRouter from "./router/chatRouter";
+import multer, { Multer, FileFilterCallback, StorageEngine } from 'multer';
+import { GridFsStorage } from 'multer-gridfs-storage';
+import Grid from 'gridfs-stream';
+import imageRouter from "./router/imageRouter";
 
 declare module "socket.io" {
-    interface Socket {
-        userID: string,
-    }
+  interface Socket {
+    userID: string,
+  }
 }
 
 dotenv.config();
@@ -30,174 +33,186 @@ const port = process.env.PORT!;
 const app: Application = express();
 
 mongoose.connect(
-    process.env.MONGODB_URI!,
-    {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-    } as ConnectOptions
+  process.env.MONGODB_URI!,
+  {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  } as ConnectOptions
 )
 mongoose.connection.on('connected', () => {
-    console.log('Connected to MongoDB');
+  console.log('Connected to MongoDB');
 }) as ConnectOptions;
+
+let gfs: Grid.Grid;
+const connection: Connection = mongoose.connection;
+connection.once("open", () => {
+  gfs = Grid(connection.db, mongoose.mongo);
+  gfs.collection('user_images');
+});
+
+
 
 app.use(cors());
 app.use(express.json());
 app.use("/auth", authRouter);
 app.use("/user", userRouter);
-app.use('/match', matchRouter)
-app.use('/chat/', chatHistoryRouter)
+app.use('/match', matchRouter);
+app.use('/chat/', chatHistoryRouter);
+app.use('/image/', imageRouter);
 
 app.get('/', async (req: Request, res: Response) => {
-    res.send('<h1>Express backend</h1>');
-    //await OnlineUser.deleteMany({});
-    //await User.deleteMany();
-    //await ChatHistory.deleteMany();
-    //await MatchingState.deleteMany();
+  res.send('<h1>Express backend</h1>');
+  //await OnlineUser.deleteMany({});
+  //await User.deleteMany();
+  //await ChatHistory.deleteMany();
+  //await MatchingState.deleteMany();
 
 })
+
+
 const server = http.createServer(app);
 const io = new Server(server, {
-    cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
-    },
-    allowEIO3: true
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  },
+  allowEIO3: true
 });
 
 io.use((socket: Socket, next: any) => {
-    try {
-        const bearerToken = socket.handshake.auth.bearerToken;
-        const userID = verifyAndDecodedJWT(bearerToken);
-        if (userID) {
-            socket.userID = userID;
-            next();
-        } else {
-            console.error("socket auth error: cant decode jwt") //todo return to frontedn
-            return next(new Error("socket auth error: cant decode jwt"))
-        }
-    } catch (err) {
-        console.error("socket auth error:" + err)
-        return next(new Error("socket auth error:" + err))
+  try {
+    const bearerToken = socket.handshake.auth.bearerToken;
+    const userID = verifyAndDecodedJWT(bearerToken);
+    if (userID) {
+      socket.userID = userID;
+      next();
+    } else {
+      console.error("socket auth error: cant decode jwt") //todo return to frontedn
+      return next(new Error("socket auth error: cant decode jwt"))
     }
+  } catch (err) {
+    console.error("socket auth error:" + err)
+    return next(new Error("socket auth error:" + err))
+  }
 })
 
 io.on('connection', (socket: Socket) => {
 
-    console.log("A user connected: ", socket.id);
+  console.log("A user connected: ", socket.id);
 
-    const userID = socket.userID;
-    const onlineUser = new OnlineUser({ socketID: socket.id, userID: userID });
-    onlineUser.save();
-    io.emit('user online', userID); //to do : make it only to every user that matched to this user
-    console.log("A user online successfully: ", socket.userID, ' ', socket.id);
+  const userID = socket.userID;
+  const onlineUser = new OnlineUser({ socketID: socket.id, userID: userID });
+  onlineUser.save();
+  io.emit('user online', userID); //to do : make it only to every user that matched to this user
+  console.log("A user online successfully: ", socket.userID, ' ', socket.id);
 
-    socket.on('disconnect', async () => {
-        console.log('A user disconnected');
-        try {
-            const queryResult = await OnlineUser.findOne({ socketID: socket.id });
-            const userID = queryResult?.userID;
-            console.log('userID', ' ', userID)
-            await OnlineUser.findOneAndDelete({ socketID: socket.id });
-            const onlineUser = await OnlineUser.findOne({ userID: userID });
-            if (!onlineUser) {
-                console.log("A user completly offline: ", userID);
-                io.emit("user offline", userID); //to do : make it only to every user that matched to this user
-            }
-        }
-        catch (err) {
-            console.error("disconnect error: " + err);
-        }
-    });
+  socket.on('disconnect', async () => {
+    console.log('A user disconnected');
+    try {
+      const queryResult = await OnlineUser.findOne({ socketID: socket.id });
+      const userID = queryResult?.userID;
+      console.log('userID', ' ', userID)
+      await OnlineUser.findOneAndDelete({ socketID: socket.id });
+      const onlineUser = await OnlineUser.findOne({ userID: userID });
+      if (!onlineUser) {
+        console.log("A user completly offline: ", userID);
+        io.emit("user offline", userID); //to do : make it only to every user that matched to this user
+      }
+    }
+    catch (err) {
+      console.error("disconnect error: " + err);
+    }
+  });
 
-    socket.on("private message", async (args: PrivateMessageArgs) => {
+  socket.on("private message", async (args: PrivateMessageArgs) => {
 
-        try {
+    try {
 
-            const fromUserID = socket.userID;
+      const fromUserID = socket.userID;
 
-            console.log("message from: ", fromUserID);
-            console.log("message: ", args.message);
+      console.log("message from: ", fromUserID);
+      console.log("message: ", args.message);
 
-            //store message in DB
-            const chatHistoryToSave = new ChatHistory({
-                fromUserID: fromUserID,
-                toUserID: args.toUserID,
-                message: args.message,
-            });
+      //store message in DB
+      const chatHistoryToSave = new ChatHistory({
+        fromUserID: fromUserID,
+        toUserID: args.toUserID,
+        message: args.message,
+      });
 
-            chatHistoryToSave.save();
+      chatHistoryToSave.save();
 
-            args.fromUserID = fromUserID;
+      args.fromUserID = fromUserID;
 
-            await broadcaseEventToUserID(io, args.toUserID, "private message", args);
-            await broadcaseEventToOtherTab(io, socket.id, userID, "self private message", args);
-        } catch (err) {
-            console.error("private message err: " + err)
-        }
-    });
+      await broadcaseEventToUserID(io, args.toUserID, "private message", args);
+      await broadcaseEventToOtherTab(io, socket.id, userID, "self private message", args);
+    } catch (err) {
+      console.error("private message err: " + err)
+    }
+  });
 
-    socket.on("match notify", async (
-        { targetUserID }: { targetUserID: string }
-    ) => {
-        try {
-            const queryUserResult = await User.findOne({ userID: socket.userID });
-            if (queryUserResult) {
-                await broadcaseEventToUserID(
-                    io, targetUserID, "match notify", {name: queryUserResult.name});
-            } else {
-                console.log('match notify error : no user found')
-            }
-        }
-        catch (err) {
-            console.log('match notify error :' + (err as any).message)
-        }
-    })
+  socket.on("match notify", async (
+    { targetUserID }: { targetUserID: string }
+  ) => {
+    try {
+      const queryUserResult = await User.findOne({ userID: socket.userID });
+      if (queryUserResult) {
+        await broadcaseEventToUserID(
+          io, targetUserID, "match notify", { name: queryUserResult.name });
+      } else {
+        console.log('match notify error : no user found')
+      }
+    }
+    catch (err) {
+      console.log('match notify error :' + (err as any).message)
+    }
+  })
 
-    socket.on("liked notify", async (
-        { targetUserID }: { targetUserID: string }
-    ) => {
-        try {
-            console.log('liked notify invoked')
-            const queryUserResult = await User.findOne({userID: socket.userID});
-            if (queryUserResult) {
-                console.log('liked notify invoked 2')
-                await broadcaseEventToUserID(
-                    io, targetUserID, "liked notify", {name: queryUserResult.name}
-                )
-            } else {
-                console.log('liked notify error : no user found')
-            }
-         } 
-        catch (err) {}
-    })
+  socket.on("liked notify", async (
+    { targetUserID }: { targetUserID: string }
+  ) => {
+    try {
+      console.log('liked notify invoked')
+      const queryUserResult = await User.findOne({ userID: socket.userID });
+      if (queryUserResult) {
+        console.log('liked notify invoked 2')
+        await broadcaseEventToUserID(
+          io, targetUserID, "liked notify", { name: queryUserResult.name }
+        )
+      } else {
+        console.log('liked notify error : no user found')
+      }
+    }
+    catch (err) { }
+  })
 
-    socket.on("receiver instant read message", async (data: PrivateMessageArgs) => {
-        ChatHistory.updateMany({
-            fromUserID: data.fromUserID, 
-            toUserID: data.toUserID,
-            createdAt: {$lte: new Date()},
-            isRead: false
-        }, {isRead: true});
-        let newData: any = data;
-        newData.recentReadTime = new Date();
-        broadcaseEventToUserID(io, data.fromUserID, "receiver instant read message", newData);
-    })
+  socket.on("receiver instant read message", async (data: PrivateMessageArgs) => {
+    ChatHistory.updateMany({
+      fromUserID: data.fromUserID,
+      toUserID: data.toUserID,
+      createdAt: { $lte: new Date() },
+      isRead: false
+    }, { isRead: true });
+    let newData: any = data;
+    newData.recentReadTime = new Date();
+    broadcaseEventToUserID(io, data.fromUserID, "receiver instant read message", newData);
+  })
 
-    socket.on("receiver has read all messages", async (data: PrivateMessageArgs) => {
-        console.log("receiver has read all messages")
-        console.log(data.fromUserID)
-        console.log(data.toUserID)
-        ChatHistory.updateMany({
-            fromUserID: data.fromUserID, 
-            toUserID: data.toUserID,
-            isRead: false
-        }, {isRead: true});
-        broadcaseEventToUserID(io, data.fromUserID, "receiver has read all messages", data)
-    })
+  socket.on("receiver has read all messages", async (data: PrivateMessageArgs) => {
+    console.log("receiver has read all messages")
+    console.log(data.fromUserID)
+    console.log(data.toUserID)
+    ChatHistory.updateMany({
+      fromUserID: data.fromUserID,
+      toUserID: data.toUserID,
+      isRead: false
+    }, { isRead: true });
+    broadcaseEventToUserID(io, data.fromUserID, "receiver has read all messages", data)
+  })
 
 
 })
 
 server.listen(port, () => {
-    console.log(`Socket is listening on port ${port}`);
+  console.log(`Socket is listening on port ${port}`);
 });
