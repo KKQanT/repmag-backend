@@ -19,6 +19,7 @@ import multer, { Multer, FileFilterCallback, StorageEngine } from 'multer';
 import { GridFsStorage } from 'multer-gridfs-storage';
 import Grid from 'gridfs-stream';
 import imageRouter from "./router/imageRouter";
+import { ImageRecord } from "./model/imageModel";
 
 declare module "socket.io" {
   interface Socket {
@@ -66,6 +67,12 @@ app.get('/', async (req: Request, res: Response) => {
   //await User.deleteMany();
   //await ChatHistory.deleteMany();
   //await MatchingState.deleteMany();
+  const result = await ImageRecord.findOne({userID: "e4051fe3-b1cb-4fa5-9ad3-d92492dc8808"})
+  .sort({order: -1})
+  .select('order')
+
+  console.log(result?.order)
+  ;
 
 })
 
