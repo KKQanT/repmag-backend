@@ -24,14 +24,15 @@ interface UserProfile {
         universities: string[] | null;
         occupations: string[] | null
     },
+    isGoogleAccount: boolean;
 }
 
 const UserSchema = new mongoose.Schema<UserProfile>(
     {
         userID: { type: String, required: true },
         email: { type: String, required: true, unique: true },
-        salt: { type: String, required: true },
-        hashedPassword: { type: String, required: true },
+        salt: { type: String },
+        hashedPassword: { type: String },
         name: { type: String, default: null },
         gender: { type: String, enum: ["man", "woman", null], default: null },
         university: { type: String, default: null },
@@ -58,6 +59,7 @@ const UserSchema = new mongoose.Schema<UserProfile>(
             universities: [{ type: String }],
             occupations: [{ type: String }]
         },
+        isGoogleAccount: {type: Boolean, default: false}
 
     },
     { timestamps: true }

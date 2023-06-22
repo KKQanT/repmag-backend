@@ -58,8 +58,8 @@ app.use(express.json());
 app.use("/auth", authRouter);
 app.use("/user", userRouter);
 app.use('/match', matchRouter);
-app.use('/chat/', chatHistoryRouter);
-app.use('/image/', imageRouter);
+app.use('/chat', chatHistoryRouter);
+app.use('/image', imageRouter);
 
 app.get('/', async (req: Request, res: Response) => {
   res.send('<h1>Express backend</h1>');
