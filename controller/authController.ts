@@ -74,7 +74,7 @@ export async function googleLogin(req: Request, res: Response) {
             newUser.userID = userID;
             newUser.email = email;
             newUser.isGoogleAccount = true;
-            newUser.save();
+            await newUser.save();
             const token = jwt.sign({
                 userID: userID, email: email
             }, JWT_SECRET);
